@@ -10,7 +10,7 @@ st.title("Dashboard Business Intelligence: Program Makan Bergizi Gratis (MBG)")
 st.markdown("Prototipe dashboard interaktif untuk memantau sebaran fasilitas pendidikan, kerentanan medis siswa, dan anomali data operasional.")
 
 # --- MEMUAT DATA ---
-DEFAULT_DATA = "./data/MASTER_DATASET_MBG_BI2026_BERSIH_TOTAL.csv"
+DEFAULT_DATA = "./data/MBG_06-19-2026.csv"
 
 st.sidebar.header("Konfigurasi Data")
 st.sidebar.markdown("Unggah file CSV Anda atau gunakan data default.")

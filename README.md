@@ -1,10 +1,10 @@
-# 🍱 Dashboard Business Intelligence: Program Makan Bergizi Gratis (MBG)
+#  Dashboard Business Intelligence: Program Makan Bergizi Gratis (MBG)
 
 Selamat datang di repositori **Dashboard BI MBG**! Dashboard interaktif ini dirancang menggunakan **Streamlit** untuk memantau sebaran fasilitas pendidikan, katering, kondisi medis khusus siswa, serta mendeteksi anomali operasional pada program Makan Bergizi Gratis (MBG) di Indonesia.
 
 ---
 
-## 🚀 Fitur Utama
+##  Fitur Utama
 1. **Ringkasan Eksekutif (KPI):** Metrik ringkas mengenai total satuan pendidikan, kecamatan, penerima manfaat, dan kondisi medis khusus.
 2. **Tabel Ringkasan per Provinsi (Interaktif):** 
    - Menampilkan total sekolah, proporsi Negeri/Swasta, total penerima manfaat, dan jumlah kondisi medis khusus.
@@ -18,7 +18,7 @@ Selamat datang di repositori **Dashboard BI MBG**! Dashboard interaktif ini dira
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 - **Python 3.10+**
 - **Streamlit** (Framework Web Dashboard)
 - **Pandas** (Pengolahan Data & Agregasi)
@@ -26,7 +26,7 @@ Selamat datang di repositori **Dashboard BI MBG**! Dashboard interaktif ini dira
 
 ---
 
-## 💻 Cara Menjalankan Project di Lokal
+##  Cara Menjalankan Project di Lokal
 
 Jika kamu ingin menjalankan dashboard ini di komputer lokalmu, ikuti langkah-langkah berikut:
 
@@ -64,7 +64,7 @@ Aplikasi akan otomatis terbuka di browser Anda pada alamat `http://localhost:850
 
 ---
 
-## 🤝 Alur Kontribusi (Git Workflow)
+##  Alur Kontribusi (Git Workflow)
 
 Bagi anggota tim yang ingin menambahkan fitur, memperbarui visualisasi, atau memperbaiki bug pada dashboard ini, gunakan panduan git berikut untuk berkolaborasi dengan aman:
 
@@ -105,7 +105,7 @@ git push origin main
 
 ---
 
-## 📂 Struktur Direktori Proyek
+##  Struktur Direktori Proyek
 ```text
 BI-Dashboard/
 │
@@ -117,4 +117,3 @@ BI-Dashboard/
 └── README.md                # Dokumentasi proyek (file ini)
 ```
 
-Jika memiliki pertanyaan atau menemukan kendala saat setup, hubungi koordinator kelompok Anda! Selamat berkolaborasi! 🍱🚀

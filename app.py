@@ -12,26 +12,17 @@ st.markdown("Prototipe dashboard interaktif untuk memantau sebaran fasilitas pen
 # --- MEMUAT DATA ---
 DEFAULT_DATA = "./data/MBG_06-19-2026.csv"
 
-st.sidebar.header("Konfigurasi Data")
-st.sidebar.markdown("Unggah file CSV Anda atau gunakan data default.")
-uploaded_file = st.sidebar.file_uploader("Pilih file dataset", type=['csv'])
-
 @st.cache_data
 def load_data(file_source):
     return pd.read_csv(file_source)
 
-if uploaded_file is not None:
-    df = load_data(uploaded_file)
-    st.sidebar.success("File berhasil diunggah!")
-elif Path(DEFAULT_DATA).exists():
+# 2. Bypass langsung tanpa kondisi if-else uploader lagi
+if Path(DEFAULT_DATA).exists():
     df = load_data(DEFAULT_DATA)
-    st.sidebar.info(f"Menggunakan data default: `{DEFAULT_DATA}`")
 else:
-    st.error("❌ Data tidak ditemukan. Silakan unggah file CSV.")
+    st.error(f"File `{DEFAULT_DATA}` tidak ditemukan di folder proyek. Pastikan file sudah dipindahkan ke folder data.")
     st.stop()
 
-# --- FILTER DATA PADA SIDEBAR ---
-st.sidebar.divider()
 st.sidebar.header("Filter Wilayah & Jenjang")
 
 # Filter Provinsi
@@ -84,7 +75,8 @@ with col_vis1:
     df_medis = df_medis[(df_medis['jumlah_alergi'] > 0) | (df_medis['jumlah_kondisi_khusus'] > 0)]
     
     fig_medis = px.bar(df_medis, x='kecamatan', y=['jumlah_alergi', 'jumlah_kondisi_khusus'], 
-                       barmode='group', labels={'value': 'Jumlah Kasus', 'variable': 'Kategori'})
+                       barmode='group', labels={'value': 'Jumlah Kasus', 'variable': 'Kategori'},
+                       )
     st.plotly_chart(fig_medis, use_container_width=True)
 
 with col_vis2:
@@ -199,7 +191,6 @@ with col_multi1:
             "jenjang": "Jenjang"
         },
         size_max=40,
-        template="plotly_white"
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
@@ -214,7 +205,7 @@ with col_multi2:
         color='jumlah_kondisi_khusus',
         hover_data=['jumlah_alergi', 'jumlah_penerima_manfaat'],
         color_continuous_scale='Reds', # Warna semakin merah = kondisi khusus semakin banyak
-        labels={'jumlah_kondisi_khusus': 'Kondisi Khusus'}
+        labels={'jumlah_kondisi_khusus': 'Kondisi Khusus'},
     )
     # Memperbaiki margin agar pas
     fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10))

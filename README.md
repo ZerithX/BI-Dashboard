@@ -1,6 +1,6 @@
 #  Dashboard Business Intelligence: Program Makan Bergizi Gratis (MBG)
 
-Selamat datang di repositori **Dashboard BI MBG**! Dashboard interaktif ini dirancang menggunakan **Streamlit** untuk memantau sebaran fasilitas pendidikan, katering, kondisi medis khusus siswa, serta mendeteksi anomali operasional pada program Makan Bergizi Gratis (MBG) di Indonesia.
+Dashboard interaktif ini dirancang untuk memenuhi Penugasan Business Intelligence dengan menggunakan **Streamlit** untuk memantau sebaran fasilitas pendidikan, katering, kondisi medis khusus siswa, serta mendeteksi anomali operasional pada program Makan Bergizi Gratis (MBG) di Indonesia.
 
 ---
 

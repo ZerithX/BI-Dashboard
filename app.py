@@ -10,7 +10,7 @@ st.title("Dashboard Business Intelligence: Program Makan Bergizi Gratis (MBG)")
 st.markdown("Prototipe dashboard interaktif untuk memantau sebaran fasilitas pendidikan, kerentanan medis siswa, dan anomali data operasional.")
 
 # --- MEMUAT DATA ---
-DEFAULT_DATA = "15cda683-b48a-d71d-36ea-06010d710c00.csv"
+DEFAULT_DATA = "./data/MASTER_DATASET_MBG_BI2026_BERSIH_TOTAL.csv"
 
 st.sidebar.header("Konfigurasi Data")
 st.sidebar.markdown("Unggah file CSV Anda atau gunakan data default.")
@@ -22,7 +22,7 @@ def load_data(file_source):
 
 if uploaded_file is not None:
     df = load_data(uploaded_file)
-    st.sidebar.success("✅ File berhasil diunggah!")
+    st.sidebar.success("File berhasil diunggah!")
 elif Path(DEFAULT_DATA).exists():
     df = load_data(DEFAULT_DATA)
     st.sidebar.info(f"Menggunakan data default: `{DEFAULT_DATA}`")

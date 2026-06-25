@@ -49,6 +49,9 @@ kecamatan = st.sidebar.multiselect("Pilih Kecamatan", options=kecamatan_options,
 jenjang_options = sorted(df['jenjang'].unique())
 jenjang = st.sidebar.multiselect("Pilih Jenjang Pendidikan", options=jenjang_options, default=jenjang_options)
 
+st.sidebar.divider()
+sembunyikan_anomali = st.sidebar.checkbox("Sembunyikan Data Anomali", value=False, help="Hapus baris data yang memiliki kasus medis tetapi jumlah murid/penerima manfaatnya 0")
+
 # Terapkan filter akhir ke dataframe
 df_filtered = df[
     (df['provinsi'].isin(provinsi)) &
@@ -56,6 +59,18 @@ df_filtered = df[
     (df['kecamatan'].isin(kecamatan)) & 
     (df['jenjang'].isin(jenjang))
 ]
+
+# Jika toggle aktif, filter keluar data anomali
+if sembunyikan_anomali:
+    # Buat kolom bantuan jika belum ada
+    df_filtered = df_filtered.copy()
+    df_filtered['total_siswa_cek'] = df_filtered['jumlah_laki'] + df_filtered['jumlah_perempuan']
+    
+    # Cari yang anomali
+    mask_anomali = ((df_filtered['jumlah_alergi'] > 0) | (df_filtered['jumlah_kondisi_khusus'] > 0)) & ((df_filtered['jumlah_penerima_manfaat'] == 0) | (df_filtered['total_siswa_cek'] == 0))
+    
+    # Ambil data yang TIDAK anomali (kebalikan dari mask menggunakan ~)
+    df_filtered = df_filtered[~mask_anomali]
 
 # --- METRIK UTAMA (KPI) ---
 st.subheader("Ringkasan Eksekutif")

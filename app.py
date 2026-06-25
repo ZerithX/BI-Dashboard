@@ -58,7 +58,7 @@ df_filtered = df[
     (df['kabupaten_kota'].isin(kab_kota)) & 
     (df['kecamatan'].isin(kecamatan)) & 
     (df['jenjang'].isin(jenjang))
-]
+].copy()
 
 # Jika toggle aktif, filter keluar data anomali
 if sembunyikan_anomali:
@@ -412,6 +412,123 @@ fig_pc = px.parallel_categories(
 )
 fig_pc.update_layout(margin=dict(t=30, l=10, r=10, b=10))
 st.plotly_chart(fig_pc, use_container_width=True)
+
+st.divider()
+
+st.header("🔍 Analisis Multivariat Anomali (Parallel Categories)")
+st.markdown("""
+Visualisasi Alur Keterkaitan Parameter (Parallel Categories) tingkat lanjut untuk data anomali. 
+Memetakan hubungan antara **Provinsi**, **Jenjang Pendidikan**, **Tingkat Penerima Manfaat**, **Persentase Anomali**, dan **Skala Kerugian Program** secara menyeluruh.
+""")
+
+# Kontrol parameter
+col_pc1, col_pc2 = st.columns(2)
+with col_pc1:
+    biaya_porsi_pc = st.slider(
+        "Estimasi Biaya per Porsi Makan Siang (Rp) - Parallel Categories", 
+        min_value=5000, 
+        max_value=30000, 
+        value=15000, 
+        step=1000, 
+        format="Rp %d"
+    )
+with col_pc2:
+    # Filter Provinsi khusus untuk menyederhanakan chart jika diinginkan
+    provinsi_pc_options = ["Semua Provinsi"] + sorted(df_filtered['provinsi'].unique().tolist())
+    pilihan_provinsi_pc = st.selectbox("Pilih Provinsi untuk Analisis Alur", options=provinsi_pc_options)
+
+# Filter data berdasarkan pilihan provinsi
+if pilihan_provinsi_pc == "Semua Provinsi":
+    df_pc_base = df_filtered.copy()
+else:
+    df_pc_base = df_filtered[df_filtered['provinsi'] == pilihan_provinsi_pc].copy()
+
+# Tentukan status anomali sesuai dashboard nomor 4
+df_pc_base['is_anomali'] = (
+    ((df_pc_base['jumlah_alergi'] > 0) | (df_pc_base['jumlah_kondisi_khusus'] > 0)) & 
+    (df_pc_base['jumlah_penerima_manfaat'] == 0)
+)
+
+# Hitung metrik per baris
+df_pc_base['siswa_terabaikan'] = 0
+df_pc_base.loc[df_pc_base['is_anomali'], 'siswa_terabaikan'] = (
+    df_pc_base['jumlah_alergi'] + df_pc_base['jumlah_kondisi_khusus']
+)
+df_pc_base['total_kerugian'] = df_pc_base['siswa_terabaikan'] * biaya_porsi_pc
+
+# Agregasi data per Provinsi dan Jenjang
+df_pc_agg = df_pc_base.groupby(['provinsi', 'jenjang']).agg(
+    total_sekolah=('jumlah_satuan_pendidikan', 'sum'),
+    sekolah_anomali=('is_anomali', 'sum'),
+    total_penerima=('jumlah_penerima_manfaat', 'sum'),
+    total_diabaikan=('siswa_terabaikan', 'sum'),
+    total_kerugian=('total_kerugian', 'sum')
+).reset_index()
+
+df_pc_agg['persentase_anomali'] = (df_pc_agg['sekolah_anomali'] / df_pc_agg['total_sekolah'] * 100).fillna(0)
+
+# Definisikan fungsi binning untuk kategorisasi
+def bin_kerugian(val):
+    if val == 0: return 'Rp 0'
+    elif val < 5000000: return '< Rp 5 Jt'
+    elif val <= 20000000: return 'Rp 5 - 20 Jt'
+    else: return '> Rp 20 Jt'
+
+def bin_penerima(val):
+    if val == 0: return '0 Penerima'
+    elif val < 5000: return '< 5K Siswa'
+    elif val <= 25000: return '5K - 25K Siswa'
+    else: return '> 25K Siswa'
+
+def bin_anomali(val):
+    if val == 0: return '0%'
+    elif val < 5: return '< 5%'
+    elif val <= 15: return '5% - 15%'
+    else: return '> 15%'
+
+df_pc_agg['Skala Kerugian'] = df_pc_agg['total_kerugian'].apply(bin_kerugian)
+df_pc_agg['Tingkat Penerima'] = df_pc_agg['total_penerima'].apply(bin_penerima)
+df_pc_agg['Persentase Anomali'] = df_pc_agg['persentase_anomali'].apply(bin_anomali)
+
+# Atur kategorikal agar urutannya teratur di sumbu grafik
+df_pc_agg['Persentase Anomali'] = pd.Categorical(
+    df_pc_agg['Persentase Anomali'], 
+    categories=['0%', '< 5%', '5% - 15%', '> 15%'], 
+    ordered=True
+)
+df_pc_agg['Skala Kerugian'] = pd.Categorical(
+    df_pc_agg['Skala Kerugian'], 
+    categories=['Rp 0', '< Rp 5 Jt', 'Rp 5 - 20 Jt', '> Rp 20 Jt'], 
+    ordered=True
+)
+df_pc_agg['Tingkat Penerima'] = pd.Categorical(
+    df_pc_agg['Tingkat Penerima'], 
+    categories=['0 Penerima', '< 5K Siswa', '5K - 25K Siswa', '> 25K Siswa'], 
+    ordered=True
+)
+
+# Urutkan dataframe agar alirannya tertata rapi
+df_pc_agg = df_pc_agg.sort_values(['Tingkat Penerima', 'Persentase Anomali', 'Skala Kerugian'])
+
+# Tampilkan grafik Parallel Categories jika ada data
+if df_pc_agg.empty:
+    st.info("💡 Tidak ada data untuk ditampilkan pada filter wilayah terpilih.")
+else:
+    fig_pc_anomali = px.parallel_categories(
+        df_pc_agg,
+        dimensions=['provinsi', 'jenjang', 'Tingkat Penerima', 'Persentase Anomali', 'Skala Kerugian'],
+        color='total_kerugian',
+        color_continuous_scale=px.colors.sequential.OrRd,
+        labels={
+            'provinsi': 'Provinsi',
+            'jenjang': 'Jenjang',
+            'Tingkat Penerima': 'Tingkat Penerima',
+            'Persentase Anomali': 'Persentase Anomali',
+            'Skala Kerugian': 'Skala Kerugian (Rp)'
+        }
+    )
+    fig_pc_anomali.update_layout(margin=dict(t=30, l=10, r=10, b=10))
+    st.plotly_chart(fig_pc_anomali, use_container_width=True)
 
 st.divider()
 

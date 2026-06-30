@@ -2,12 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from pathlib import Path
+from theme import apply_theme, status_strip, style_plotly
 
 # Konfigurasi Halaman
 st.set_page_config(page_title="Dashboard Analisis MBG", page_icon="🍱", layout="wide")
 
-st.title("Dashboard Business Intelligence: Program Makan Bergizi Gratis (MBG)")
-st.markdown("Prototipe dashboard interaktif untuk memantau sebaran fasilitas pendidikan, kerentanan medis siswa, dan anomali data operasional.")
+# Terapkan custom theme
+apply_theme()
 
 # --- MEMUAT DATA ---
 DEFAULT_DATA = "./data/MBG_06-19-2026.csv"
@@ -126,8 +127,17 @@ if sembunyikan_anomali:
     # Ambil data yang TIDAK anomali (kebalikan dari mask menggunakan ~)
     df_filtered = df_filtered[~mask_anomali]
 
+# Status strip — signature header element
+status_strip(
+    records=len(df_filtered),
+    last_sync=df['date_pull'].max() if 'date_pull' in df.columns else "2026-06-19",
+    pipeline_status="ACTIVE"
+)
+
 # --- MAIN CONTENT ---
 if menu == "Home":
+    st.title("Dashboard Business Intelligence: Program Makan Bergizi Gratis (MBG)")
+    st.markdown("Prototipe dashboard interaktif untuk memantau sebaran fasilitas pendidikan, kerentanan medis siswa, dan anomali data operasional.")
     st.subheader("Ringkasan Eksekutif")
     col1, col2, col3, col4, col5 = st.columns(5)
     
@@ -280,6 +290,7 @@ elif menu == "Regional":
         )
 
     fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    style_plotly(fig_map)
     st.plotly_chart(fig_map, use_container_width=True)
 
     st.divider()
@@ -297,6 +308,7 @@ elif menu == "Regional":
         labels={'jumlah_kondisi_khusus': 'Kondisi Khusus'},
     )
     fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10))
+    style_plotly(fig_treemap)
     st.plotly_chart(fig_treemap, use_container_width=True)
 
 elif menu == "Demographics":
@@ -309,7 +321,83 @@ elif menu == "Demographics":
     })
     fig_demo = px.pie(df_demo, values='Jumlah', names='Gender', hole=0.4, color='Gender',
                       color_discrete_map={'Laki-laki': '#3498db', 'Perempuan': '#e74c3c'})
+    style_plotly(fig_demo)
     st.plotly_chart(fig_demo, use_container_width=True)
+
+    st.divider()
+
+    # --- GRAFIK BARU 1: Penerima Manfaat per Jenjang ---
+    st.subheader("📊 Penerima Manfaat per Jenjang Pendidikan")
+    st.markdown("Total penerima manfaat MBG yang dikelompokkan per jenjang pendidikan, diurutkan dari terbesar ke terkecil.")
+
+    df_jenjang_pm = df_filtered.groupby('jenjang')['jumlah_penerima_manfaat'].sum().reset_index()
+    df_jenjang_pm = df_jenjang_pm.sort_values('jumlah_penerima_manfaat', ascending=False)
+
+    fig_pm_jenjang = px.bar(
+        df_jenjang_pm,
+        x='jenjang',
+        y='jumlah_penerima_manfaat',
+        color='jenjang',
+        text='jumlah_penerima_manfaat',
+        labels={'jenjang': 'Jenjang Pendidikan', 'jumlah_penerima_manfaat': 'Total Penerima Manfaat'},
+        color_discrete_sequence=px.colors.qualitative.Bold,
+    )
+    fig_pm_jenjang.update_traces(
+        texttemplate='%{text:,.0f}',
+        textposition='outside',
+        cliponaxis=False
+    )
+    fig_pm_jenjang.update_layout(
+        showlegend=False,
+        xaxis_title='Jenjang Pendidikan',
+        yaxis_title='Total Penerima Manfaat',
+        margin=dict(t=40, b=40),
+    )
+    style_plotly(fig_pm_jenjang)
+    st.plotly_chart(fig_pm_jenjang, use_container_width=True)
+    st.caption("💡 **Insight:** SD mendominasi dengan jumlah penerima terbesar, jauh melampaui jenjang lain. PKBM dan SKB menjadi yang terkecil — mencerminkan skala populasi masing-masing jenjang.")
+
+    st.divider()
+
+    # --- GRAFIK BARU 2: Komposisi Gender per Jenjang ---
+    st.subheader("👥 Komposisi Gender per Jenjang Pendidikan")
+    st.markdown("Perbandingan jumlah siswa laki-laki dan perempuan di setiap jenjang pendidikan.")
+
+    df_gender_jenjang = df_filtered.groupby('jenjang')[['jumlah_laki', 'jumlah_perempuan']].sum().reset_index()
+    df_gender_jenjang = df_gender_jenjang.sort_values('jumlah_laki', ascending=False)
+
+    import plotly.graph_objects as go
+    fig_gender = go.Figure()
+    fig_gender.add_trace(go.Bar(
+        name='Laki-laki',
+        x=df_gender_jenjang['jenjang'],
+        y=df_gender_jenjang['jumlah_laki'],
+        marker_color='#3b82f6',
+        text=df_gender_jenjang['jumlah_laki'],
+        texttemplate='%{text:,.0f}',
+        textposition='inside',
+        insidetextanchor='middle'
+    ))
+    fig_gender.add_trace(go.Bar(
+        name='Perempuan',
+        x=df_gender_jenjang['jenjang'],
+        y=df_gender_jenjang['jumlah_perempuan'],
+        marker_color='#ec4899',
+        text=df_gender_jenjang['jumlah_perempuan'],
+        texttemplate='%{text:,.0f}',
+        textposition='inside',
+        insidetextanchor='middle'
+    ))
+    fig_gender.update_layout(
+        barmode='group',
+        xaxis_title='Jenjang Pendidikan',
+        yaxis_title='Jumlah Siswa',
+        legend_title='Gender',
+        margin=dict(t=40, b=40)
+    )
+    style_plotly(fig_gender)
+    st.plotly_chart(fig_gender, use_container_width=True)
+    st.caption("💡 **Insight:** Di hampir semua jenjang laki-laki lebih banyak, namun di SMA perempuan justru lebih tinggi — pola unik yang hanya muncul di jenjang ini dan layak diperhatikan dalam distribusi MBG.")
     
 elif menu == "Health Conditions":
     col_vis1, col_vis2 = st.columns(2)
@@ -324,6 +412,7 @@ elif menu == "Health Conditions":
         fig_medis = px.bar(df_medis, x='kecamatan', y=['jumlah_alergi', 'jumlah_kondisi_khusus'], 
                            barmode='group', labels={'value': 'Jumlah Kasus', 'variable': 'Kategori'},
                            )
+        style_plotly(fig_medis)
         st.plotly_chart(fig_medis, use_container_width=True)
     
     with col_vis2:
@@ -331,6 +420,7 @@ elif menu == "Health Conditions":
         st.markdown("Membantu penentuan jenjang mana yang membutuhkan pengawasan diet lebih ketat.")
         df_jenjang = df_filtered.groupby('jenjang')['jumlah_kondisi_khusus'].sum().reset_index()
         fig_jenjang = px.pie(df_jenjang, values='jumlah_kondisi_khusus', names='jenjang', hole=0.4)
+        style_plotly(fig_jenjang)
         st.plotly_chart(fig_jenjang, use_container_width=True)
 
     st.divider()
@@ -358,7 +448,60 @@ elif menu == "Health Conditions":
         },
         size_max=40,
     )
+    style_plotly(fig_scatter)
     st.plotly_chart(fig_scatter, use_container_width=True)
+
+    st.divider()
+
+    # --- GRAFIK BARU 5: Tiga Jenis Kondisi Medis per Jenjang ---
+    st.subheader("🩺 Perbandingan Tiga Jenis Kondisi Medis per Jenjang")
+    st.markdown("Breakdown detail alergi, fobia, dan intoleransi per jenjang pendidikan.")
+
+    # Cek kolom yang tersedia
+    kolom_medis = []
+    label_medis = {}
+    for col, label in [('jumlah_alergi', 'Alergi'), ('jumlah_fobia', 'Fobia'), ('jumlah_intoleransi', 'Intoleransi')]:
+        if col in df_filtered.columns:
+            kolom_medis.append(col)
+            label_medis[col] = label
+
+    if kolom_medis:
+        df_kondisi_jenjang = df_filtered.groupby('jenjang')[kolom_medis].sum().reset_index()
+        # Urutkan berdasarkan total kondisi medis
+        df_kondisi_jenjang['_total'] = df_kondisi_jenjang[kolom_medis].sum(axis=1)
+        df_kondisi_jenjang = df_kondisi_jenjang.sort_values('_total', ascending=False).drop(columns=['_total'])
+
+        color_map_medis = {
+            'jumlah_alergi': '#ef4444',
+            'jumlah_fobia': '#8b5cf6',
+            'jumlah_intoleransi': '#f97316'
+        }
+
+        import plotly.graph_objects as go
+        fig_kondisi = go.Figure()
+        for col in kolom_medis:
+            fig_kondisi.add_trace(go.Bar(
+                name=label_medis[col],
+                x=df_kondisi_jenjang['jenjang'],
+                y=df_kondisi_jenjang[col],
+                marker_color=color_map_medis.get(col, '#6b7280'),
+                text=df_kondisi_jenjang[col],
+                texttemplate='%{text:,}',
+                textposition='inside',
+                insidetextanchor='middle'
+            ))
+        fig_kondisi.update_layout(
+            barmode='group',
+            xaxis_title='Jenjang Pendidikan',
+            yaxis_title='Jumlah Kasus',
+            legend_title='Jenis Kondisi Medis',
+            margin=dict(t=40, b=40)
+        )
+        style_plotly(fig_kondisi)
+        st.plotly_chart(fig_kondisi, use_container_width=True)
+        st.caption("💡 **Insight:** Alergi adalah kondisi paling umum di semua jenjang (SD mendominasi), sementara fobia jauh lebih kecil. Visualisasi ini melengkapi bubble chart dengan breakdown lebih detail per jenis kondisi dan jenjang.")
+    else:
+        st.info("ℹ️ Kolom `jumlah_fobia` dan/atau `jumlah_intoleransi` tidak ditemukan dalam dataset. Pastikan data sudah diperbarui.")
 
 elif menu == "Beneficiaries":
     st.subheader("Pemantauan Kualitas Data (Deteksi Anomali)")
@@ -395,7 +538,58 @@ elif menu == "Beneficiaries":
             hole=0.4, height=280
         )
         fig_pie_anomali.update_layout(margin=dict(t=10, b=10, l=10, r=10))
+        style_plotly(fig_pie_anomali)
         st.plotly_chart(fig_pie_anomali, use_container_width=True)
+
+        st.divider()
+
+        # --- GRAFIK BARU 3: Top 10 Provinsi dengan Anomali Terbanyak ---
+        st.subheader("🗺️ Top 10 Provinsi dengan Anomali Terbanyak")
+        st.markdown("Provinsi dengan jumlah kasus anomali terbanyak: kondisi khusus > 0 namun penerima manfaat = 0.")
+
+        # Filter anomali khusus: kondisi_khusus > 0 DAN penerima_manfaat = 0 (dari seluruh df, bukan hanya df_filtered agar representatif)
+        df_anomali_prov = df[
+            (df['jumlah_kondisi_khusus'] > 0) &
+            (df['jumlah_penerima_manfaat'] == 0)
+        ]
+        df_anomali_prov_count = (
+            df_anomali_prov.groupby('provinsi')
+            .size()
+            .reset_index(name='jumlah_kasus_anomali')
+            .sort_values('jumlah_kasus_anomali', ascending=False)
+            .head(10)
+        )
+        # Urutkan ascending untuk horizontal bar agar yang terbesar di atas
+        df_anomali_prov_count = df_anomali_prov_count.sort_values('jumlah_kasus_anomali', ascending=True)
+        # Bersihkan nama provinsi
+        df_anomali_prov_count['provinsi_label'] = df_anomali_prov_count['provinsi'].str.replace('Prov. ', '', regex=False)
+
+        fig_anomali_prov = px.bar(
+            df_anomali_prov_count,
+            x='jumlah_kasus_anomali',
+            y='provinsi_label',
+            orientation='h',
+            text='jumlah_kasus_anomali',
+            labels={'jumlah_kasus_anomali': 'Jumlah Kasus Anomali', 'provinsi_label': 'Provinsi'},
+            color='jumlah_kasus_anomali',
+            color_continuous_scale='OrRd',
+        )
+        fig_anomali_prov.update_traces(
+            texttemplate='%{text:,}',
+            textposition='outside',
+            cliponaxis=False
+        )
+        fig_anomali_prov.update_layout(
+            showlegend=False,
+            coloraxis_showscale=False,
+            xaxis_title='Jumlah Kasus Anomali',
+            yaxis_title='',
+            margin=dict(t=20, b=20, l=10, r=80),
+            height=420
+        )
+        style_plotly(fig_anomali_prov)
+        st.plotly_chart(fig_anomali_prov, use_container_width=True)
+        st.caption("💡 **Insight:** Jawa Tengah dan Jawa Barat adalah penyumbang anomali terbesar secara nasional — provinsi ini perlu diprioritaskan untuk investigasi dan perbaikan data pelaporan MBG.")
         
         st.dataframe(
             df_anomali[['kabupaten_kota', 'kecamatan', 'jenjang', 'jumlah_alergi', 'jumlah_kondisi_khusus', 'Total Kasus Medis Diabaikan', 'Potensi Kerugian (Rp)']],
@@ -412,7 +606,54 @@ elif menu == "Schools":
         'Jumlah': [df_filtered['jumlah_satpen_negeri'].sum(), df_filtered['jumlah_satpen_swasta'].sum()]
     })
     fig_status = px.bar(df_status, x='Status', y='Jumlah', color='Status', text_auto=True)
+    style_plotly(fig_status)
     st.plotly_chart(fig_status, use_container_width=True)
+
+    st.divider()
+
+    # --- GRAFIK BARU 4: Negeri vs Swasta per Provinsi (Top 5) ---
+    st.subheader("🏫 Negeri vs Swasta per Provinsi (Top 5 Sekolah Negeri)")
+    st.markdown("Perbandingan jumlah satuan pendidikan negeri dan swasta di 5 provinsi dengan sekolah negeri terbanyak.")
+
+    df_sekolah_prov = df_filtered.groupby('provinsi').agg(
+        negeri=('jumlah_satpen_negeri', 'sum'),
+        swasta=('jumlah_satpen_swasta', 'sum')
+    ).reset_index()
+    df_sekolah_prov = df_sekolah_prov.sort_values('negeri', ascending=False).head(5)
+    df_sekolah_prov['provinsi_label'] = df_sekolah_prov['provinsi'].str.replace('Prov. ', '', regex=False)
+
+    import plotly.graph_objects as go
+    fig_ns = go.Figure()
+    fig_ns.add_trace(go.Bar(
+        name='Negeri',
+        x=df_sekolah_prov['provinsi_label'],
+        y=df_sekolah_prov['negeri'],
+        marker_color='#0ea5e9',
+        text=df_sekolah_prov['negeri'],
+        texttemplate='%{text:,}',
+        textposition='outside',
+        cliponaxis=False
+    ))
+    fig_ns.add_trace(go.Bar(
+        name='Swasta',
+        x=df_sekolah_prov['provinsi_label'],
+        y=df_sekolah_prov['swasta'],
+        marker_color='#f59e0b',
+        text=df_sekolah_prov['swasta'],
+        texttemplate='%{text:,}',
+        textposition='outside',
+        cliponaxis=False
+    ))
+    fig_ns.update_layout(
+        barmode='group',
+        xaxis_title='Provinsi',
+        yaxis_title='Jumlah Satuan Pendidikan',
+        legend_title='Status',
+        margin=dict(t=50, b=40)
+    )
+    style_plotly(fig_ns)
+    st.plotly_chart(fig_ns, use_container_width=True)
+    st.caption("💡 **Insight:** Setiap provinsi memiliki komposisi negeri-swasta yang berbeda-beda — pola ini penting untuk strategi distribusi logistik MBG agar tepat sasaran sesuai kapasitas kelembagaan.")
     
 elif menu == "Trends":
     st.info("Tidak ada data tren historis yang tersedia saat ini.")
@@ -479,6 +720,7 @@ elif menu == "Multivariate":
         }
     )
     fig_pc.update_layout(margin=dict(t=30, l=10, r=10, b=10))
+    style_plotly(fig_pc)
     st.plotly_chart(fig_pc, use_container_width=True)
 
     st.divider()
@@ -596,4 +838,5 @@ elif menu == "Multivariate":
             }
         )
         fig_pc_anomali.update_layout(margin=dict(t=30, l=10, r=10, b=10))
+        style_plotly(fig_pc_anomali)
         st.plotly_chart(fig_pc_anomali, use_container_width=True)

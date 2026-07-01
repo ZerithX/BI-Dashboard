@@ -33,7 +33,7 @@ from streamlit_option_menu import option_menu
 
 # --- SIDEBAR: MENU & FILTER ---
 with st.sidebar:
-    st.markdown("### 🖥️ Menu Utama")
+    st.markdown("### Menu Utama")
     menu = option_menu(
         menu_title=None,
         options=["Home", "Regional", "Demographics", "Health Conditions", "Beneficiaries", "Schools", "Trends", "Multivariate"],
@@ -733,6 +733,7 @@ elif menu == "Trends":
     )
     style_plotly(fig_anomali_rasio)
     st.plotly_chart(fig_anomali_rasio, use_container_width=True)
+    st.caption("💡 **Insight:** Provinsi di puncak grafik ini memiliki kegagalan sistemik pendataan Dapodik terburuk. Rasio anomali yang tinggi menandakan ketidaksiapan alokasi logistik khusus, yang berisiko menjadi temuan audit BPK terkait hak gizi siswa berkebutuhan khusus yang tidak terpenuhi.")
     
     st.divider()
 
@@ -788,6 +789,7 @@ elif menu == "Trends":
     
     style_plotly(fig_katering)
     st.plotly_chart(fig_katering, use_container_width=True)
+    st.caption("💡 **Insight:** Disparitas antara garis tren (kepadatan) dan batang (anggaran harian) mengukur efisiensi logistik. Provinsi dengan anggaran besar namun kepadatan siswa rendah (garis biru di bawah batang hijau) membuktikan tingginya biaya distribusi/ongkos kirim katering di wilayah pelosok.")
 
 elif menu == "Multivariate":
     st.subheader("Alur Keterkaitan Parameter (Parallel Categories)")

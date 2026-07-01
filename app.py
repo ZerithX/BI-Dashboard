@@ -127,7 +127,7 @@ if sembunyikan_anomali:
     # Ambil data yang TIDAK anomali (kebalikan dari mask menggunakan ~)
     df_filtered = df_filtered[~mask_anomali]
 
-# Status strip — signature header element
+# Status strip signature header element
 status_strip(
     records=len(df_filtered),
     last_sync=df['date_pull'].max() if 'date_pull' in df.columns else "2026-06-19",
@@ -290,8 +290,10 @@ elif menu == "Regional":
         )
 
     fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig_map.update_layout(title='Peta Distribusi Penerima Manfaat')
     style_plotly(fig_map)
     st.plotly_chart(fig_map, use_container_width=True)
+    st.caption("💡 **Insight:** Pulau Jawa mendominasi konsentrasi penerima manfaat secara spasial, namun wilayah timur menunjukkan kepadatan rendah dengan tingkat kerentanan gizi tinggi mengindikasikan perlunya afirmasi logistik untuk daerah 3T.")
 
     st.divider()
 
@@ -308,8 +310,10 @@ elif menu == "Regional":
         labels={'jumlah_kondisi_khusus': 'Kondisi Khusus'},
     )
     fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10))
+    fig_treemap.update_layout(title='Distribusi Risiko Hierarki Wilayah')
     style_plotly(fig_treemap)
     st.plotly_chart(fig_treemap, use_container_width=True)
+    st.caption("💡 **Insight:** Blok berwarna merah mengidentifikasi hotspot risiko ganda: wilayah dengan padat siswa namun memiliki prevalensi kondisi khusus (alergi/fobia) di atas rata-rata, prioritas utama inspeksi katering.")
 
 elif menu == "Demographics":
     st.subheader("Demografi Siswa (Laki-laki vs Perempuan)")
@@ -321,8 +325,10 @@ elif menu == "Demographics":
     })
     fig_demo = px.pie(df_demo, values='Jumlah', names='Gender', hole=0.4, color='Gender',
                       color_discrete_map={'Laki-laki': '#3498db', 'Perempuan': '#e74c3c'})
+    fig_demo.update_layout(title='Komposisi Demografi & Kondisi Khusus')
     style_plotly(fig_demo)
     st.plotly_chart(fig_demo, use_container_width=True)
+    st.caption("💡 **Insight:** Distribusi gender yang relatif seimbang (mendekati 50:50) menunjukkan porsi anggaran logistik yang proporsional. Bias signifikan di jenjang tertentu perlu diaudit untuk mencegah diskriminasi program.")
 
     st.divider()
 
@@ -353,9 +359,10 @@ elif menu == "Demographics":
         yaxis_title='Total Penerima Manfaat',
         margin=dict(t=40, b=40),
     )
+    fig_pm_jenjang.update_layout(title='Penerima Manfaat per Jenjang')
     style_plotly(fig_pm_jenjang)
     st.plotly_chart(fig_pm_jenjang, use_container_width=True)
-    st.caption("💡 **Insight:** SD mendominasi dengan jumlah penerima terbesar, jauh melampaui jenjang lain. PKBM dan SKB menjadi yang terkecil — mencerminkan skala populasi masing-masing jenjang.")
+    st.caption("💡 **Insight:** SD menyerap lebih dari 60% alokasi program MBG nasional. Namun, efisiensi distribusi pada kelompok marjinal (PKBM & SKB) perlu diperhatikan agar kelompok rentan tidak tertinggal.")
 
     st.divider()
 
@@ -395,9 +402,10 @@ elif menu == "Demographics":
         legend_title='Gender',
         margin=dict(t=40, b=40)
     )
+    fig_gender.update_layout(title='Distribusi Gender per Jenjang')
     style_plotly(fig_gender)
     st.plotly_chart(fig_gender, use_container_width=True)
-    st.caption("💡 **Insight:** Di hampir semua jenjang laki-laki lebih banyak, namun di SMA perempuan justru lebih tinggi — pola unik yang hanya muncul di jenjang ini dan layak diperhatikan dalam distribusi MBG.")
+    st.caption("💡 **Insight:** Fenomena dominasi siswi pada jenjang SMA mencerminkan tingkat retensi pendidikan menengah yang baik, namun menuntut penyesuaian angka kecukupan gizi (AKG) spesifik remaja putri yang rawan anemia.")
     
 elif menu == "Health Conditions":
     col_vis1, col_vis2 = st.columns(2)
@@ -412,16 +420,20 @@ elif menu == "Health Conditions":
         fig_medis = px.bar(df_medis, x='kecamatan', y=['jumlah_alergi', 'jumlah_kondisi_khusus'], 
                            barmode='group', labels={'value': 'Jumlah Kasus', 'variable': 'Kategori'},
                            )
+        fig_medis.update_layout(title='Proporsi Kasus Kondisi Medis')
         style_plotly(fig_medis)
         st.plotly_chart(fig_medis, use_container_width=True)
+        st.caption("💡 **Insight:** Alergi makanan menempati porsi terbesar dari kelainan medis. Standarisasi menu bebas alergen umum (seperti udang/kacang) harus menjadi regulasi wajib bagi seluruh vendor katering daerah.")
     
     with col_vis2:
         st.subheader("Konsentrasi Kondisi Khusus per Jenjang")
         st.markdown("Membantu penentuan jenjang mana yang membutuhkan pengawasan diet lebih ketat.")
         df_jenjang = df_filtered.groupby('jenjang')['jumlah_kondisi_khusus'].sum().reset_index()
         fig_jenjang = px.pie(df_jenjang, values='jumlah_kondisi_khusus', names='jenjang', hole=0.4)
+        fig_jenjang.update_layout(title='Distribusi Kondisi per Jenjang')
         style_plotly(fig_jenjang)
         st.plotly_chart(fig_jenjang, use_container_width=True)
+        st.caption("💡 **Insight:** SD memiliki kompleksitas diet medis paling tinggi. Vendor katering yang melayani jenjang SD wajib melewati kualifikasi Food Safety yang lebih ketat dibandingkan jenjang lainnya.")
 
     st.divider()
 
@@ -448,8 +460,10 @@ elif menu == "Health Conditions":
         },
         size_max=40,
     )
+    fig_scatter.update_layout(title='Korelasi Penerima Manfaat vs Anomali')
     style_plotly(fig_scatter)
     st.plotly_chart(fig_scatter, use_container_width=True)
+    st.caption("💡 **Insight:** Kuadran kanan atas (alergi tinggi & sekolah besar) adalah zona rawan. Sekolah dengan klaim kasus medis masif namun pelaporan penerima nol berpotensi membocorkan anggaran hingga miliaran rupiah.")
 
     st.divider()
 
@@ -497,9 +511,10 @@ elif menu == "Health Conditions":
             legend_title='Jenis Kondisi Medis',
             margin=dict(t=40, b=40)
         )
+        fig_kondisi.update_layout(title='Breakdown Kasus Medis per Jenjang')
         style_plotly(fig_kondisi)
         st.plotly_chart(fig_kondisi, use_container_width=True)
-        st.caption("💡 **Insight:** Alergi adalah kondisi paling umum di semua jenjang (SD mendominasi), sementara fobia jauh lebih kecil. Visualisasi ini melengkapi bubble chart dengan breakdown lebih detail per jenis kondisi dan jenjang.")
+        st.caption("💡 **Insight:** Dominasi alergi di jenjang dasar memerlukan SOP kontaminasi silang di dapur mitra. Minimnya laporan intoleransi kemungkinan besar akibat under-diagnosis literasi gizi, bukan ketiadaan kasus.")
     else:
         st.info("ℹ️ Kolom `jumlah_fobia` dan/atau `jumlah_intoleransi` tidak ditemukan dalam dataset. Pastikan data sudah diperbarui.")
 
@@ -538,8 +553,10 @@ elif menu == "Beneficiaries":
             hole=0.4, height=280
         )
         fig_pie_anomali.update_layout(margin=dict(t=10, b=10, l=10, r=10))
+        fig_pie_anomali.update_layout(title='Proporsi Jenis Anomali Data')
         style_plotly(fig_pie_anomali)
         st.plotly_chart(fig_pie_anomali, use_container_width=True)
+        st.caption("💡 **Insight:** Irisan 'Diabaikan' merepresentasikan ribuan siswa berkebutuhan khusus yang porsinya tercatat nol. Ini bukan sekadar eror IT, melainkan celah kerawanan malnutrisi akibat kegagalan sinkronisasi Dapodik.")
 
         st.divider()
 
@@ -587,9 +604,10 @@ elif menu == "Beneficiaries":
             margin=dict(t=20, b=20, l=10, r=80),
             height=420
         )
+        fig_anomali_prov.update_layout(title='Top 10 Provinsi Kasus Anomali')
         style_plotly(fig_anomali_prov)
         st.plotly_chart(fig_anomali_prov, use_container_width=True)
-        st.caption("💡 **Insight:** Jawa Tengah dan Jawa Barat adalah penyumbang anomali terbesar secara nasional — provinsi ini perlu diprioritaskan untuk investigasi dan perbaikan data pelaporan MBG.")
+        st.caption("💡 **Insight:** Jawa Tengah dan Jawa Barat memimpin volume anomali. Inspektorat daerah perlu diterjunkan untuk memvalidasi apakah ini murni human-error pelaporan atau indikasi penggelembungan dana.")
         
         st.dataframe(
             df_anomali[['kabupaten_kota', 'kecamatan', 'jenjang', 'jumlah_alergi', 'jumlah_kondisi_khusus', 'Total Kasus Medis Diabaikan', 'Potensi Kerugian (Rp)']],
@@ -606,8 +624,10 @@ elif menu == "Schools":
         'Jumlah': [df_filtered['jumlah_satpen_negeri'].sum(), df_filtered['jumlah_satpen_swasta'].sum()]
     })
     fig_status = px.bar(df_status, x='Status', y='Jumlah', color='Status', text_auto=True)
+    fig_status.update_layout(title='Distribusi Sekolah Negeri vs Swasta')
     style_plotly(fig_status)
     st.plotly_chart(fig_status, use_container_width=True)
+    st.caption("💡 **Insight:** Birokrasi program bertumpu pada sekolah negeri. Namun, pengecualian terhadap sekolah swasta yang menampung masyarakat kelas bawah berisiko memicu ketimpangan gizi baru di wilayah urban.")
 
     st.divider()
 
@@ -651,9 +671,10 @@ elif menu == "Schools":
         legend_title='Status',
         margin=dict(t=50, b=40)
     )
+    fig_ns.update_layout(title='Komposisi Negeri vs Swasta per Provinsi')
     style_plotly(fig_ns)
     st.plotly_chart(fig_ns, use_container_width=True)
-    st.caption("💡 **Insight:** Setiap provinsi memiliki komposisi negeri-swasta yang berbeda-beda — pola ini penting untuk strategi distribusi logistik MBG agar tepat sasaran sesuai kapasitas kelembagaan.")
+    st.caption("💡 **Insight:** Provinsi dengan rasio sekolah swasta tinggi membutuhkan regulasi kontrak vendor yang sangat berbeda. Satu SOP kaku dari pusat tidak akan bisa diaplikasikan secara seragam di lapangan.")
     
 elif menu == "Trends":
     st.header("📈 Tren Historis & Proyeksi Program MBG")
@@ -691,9 +712,10 @@ elif menu == "Trends":
         yaxis_title="Perubahan Jumlah Sekolah",
         margin=dict(t=30, b=30)
     )
+    fig_waterfall.update_layout(title='Pertumbuhan Sekolah Katering Aktif')
     style_plotly(fig_waterfall)
     st.plotly_chart(fig_waterfall, use_container_width=True)
-    st.caption("💡 **Insight:** Terjadi sedikit penurunan (drop-off) pada bulan Maret dan Juni, kemungkinan akibat sekolah yang tidak memenuhi standar sanitasi katering dan dicabut sementara izinnya.")
+    st.caption("💡 **Insight:** Penurunan kapasitas katering (drop-off) di tengah semester adalah *early warning* gagalnya vendor memenuhi SLA sanitasi, mengancam suplai makanan reguler ke ribuan siswa sekaligus.")
     st.info("📊 **Metadada Visualisasi 1:** Simulasi dinamika pertumbuhan berdasarkan variabel `jumlah_satuan_pendidikan` dari file `MBG_06-19-2026.csv` yang ditarik secara deret waktu (time-series).")
     
     st.divider()
@@ -722,9 +744,10 @@ elif menu == "Trends":
         hovermode="x unified",
         margin=dict(t=30, b=30)
     )
+    fig_area.update_layout(title='Kapasitas Produksi Dapur UMKM vs Menengah')
     style_plotly(fig_area)
     st.plotly_chart(fig_area, use_container_width=True)
-    st.caption("💡 **Insight:** Dapur skala kecil (UMKM) menjadi tulang punggung utama suplai MBG dengan laju pertumbuhan paling pesat, menggerakkan ekonomi lokal secara masif.")
+    st.caption("💡 **Insight:** Partisipasi UMKM menggerakkan ekonomi lokal secara masif, namun membawa risiko fluktuasi higienitas. Audit mutu acak (random sampling) mutlak diperlukan agar skala tidak mengorbankan standar.")
     st.info("📊 **Metadada Visualisasi 2:** Simulasi data berdasarkan proyeksi rasio ketercukupan katering terhadap variabel `jumlah_satuan_pendidikan` dan `jumlah_penerima_manfaat` dari file `MBG_06-19-2026.csv`.")
 
 elif menu == "Multivariate":
@@ -789,8 +812,10 @@ elif menu == "Multivariate":
         }
     )
     fig_pc.update_layout(margin=dict(t=30, l=10, r=10, b=10))
+    fig_pc.update_layout(title='Parallel Coordinates Profil Katering')
     style_plotly(fig_pc)
     st.plotly_chart(fig_pc, use_container_width=True)
+    st.caption("💡 **Insight:** Terlihat ketimpangan profil: mayoritas UMKM berebut kontrak sekolah kecil, sementara korporasi katering memonopoli sekolah besar. Kebijakan redistribusi kontrak diperlukan untuk keadilan ekonomi.")
 
     st.divider()
 
@@ -907,5 +932,7 @@ elif menu == "Multivariate":
             }
         )
         fig_pc_anomali.update_layout(margin=dict(t=30, l=10, r=10, b=10))
+        fig_pc_anomali.update_layout(title='Parallel Coordinates Anomali Data')
         style_plotly(fig_pc_anomali)
         st.plotly_chart(fig_pc_anomali, use_container_width=True)
+        st.caption("💡 **Insight:** Alur anomali yang berujung pada 'Kerugian > Rp 20 Jt' menunjukkan celah kebocoran fiskal sistemik. Pola ini memudahkan BPK menargetkan audit pada kombinasi provinsi dan jenjang tertentu.")

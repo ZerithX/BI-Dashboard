@@ -677,78 +677,117 @@ elif menu == "Schools":
     st.caption("💡 **Insight:** Provinsi dengan rasio sekolah swasta tinggi membutuhkan regulasi kontrak vendor yang sangat berbeda. Satu SOP kaku dari pusat tidak akan bisa diaplikasikan secara seragam di lapangan.")
     
 elif menu == "Trends":
-    st.header("📈 Tren Historis & Proyeksi Program MBG")
-    st.markdown("Visualisasi berbasis data historis (simulasi) untuk mengamati perkembangan implementasi dan kesiapan infrastruktur dari waktu ke waktu.")
+    st.header("📈 Tren & Distribusi Katering MBG")
+    st.markdown("Visualisasi berbasis data sebaran logistik katering dan analisis anomali pelaporan tingkat provinsi.")
     
-    import numpy as np
+    # Diagram 1: Rasio Anomali per Provinsi (%)
+    st.subheader("1. Rasio Anomali per Provinsi (%)")
+    st.markdown("Persentase kecamatan dengan anomali (kondisi medis aktif tapi penerima manfaat = 0). Menjawab provinsi mana yang paling bermasalah secara proporsional.")
+    
+    df_kecamatan = df.groupby(['provinsi', 'kecamatan']).agg(
+        kasus_medis=('jumlah_alergi', 'sum'),
+        kondisi_khusus=('jumlah_kondisi_khusus', 'sum'),
+        penerima=('jumlah_penerima_manfaat', 'sum')
+    ).reset_index()
+    
+    df_kecamatan['is_anomali'] = ((df_kecamatan['kasus_medis'] + df_kecamatan['kondisi_khusus'] > 0) & (df_kecamatan['penerima'] == 0)).astype(int)
+    
+    df_prov_anomali = df_kecamatan.groupby('provinsi').agg(
+        kecamatan_anomali=('is_anomali', 'sum'),
+        total_kecamatan=('kecamatan', 'count')
+    ).reset_index()
+    
+    df_prov_anomali['rasio_anomali'] = (df_prov_anomali['kecamatan_anomali'] / df_prov_anomali['total_kecamatan']) * 100
+    df_prov_anomali = df_prov_anomali.sort_values('rasio_anomali', ascending=True)
+    df_prov_anomali['provinsi_label'] = df_prov_anomali['provinsi'].str.replace('Prov. ', '', regex=False)
+    
     import plotly.graph_objects as go
-    
-    # Generate dummy months
-    months = ['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'Mei 2026', 'Jun 2026']
-    
-
-    st.subheader("1. Dinamika Onboarding Sekolah Baru")
-    st.markdown("Penambahan dan pengurangan jumlah sekolah yang siap mendistribusikan MBG setiap bulannya.")
-    
-    # Dummy data for Waterfall
-    onboarding_changes = [5000, 2500, -300, 4200, 1500, -100]
-    cumulative_schools = np.cumsum(onboarding_changes)
-    
-    fig_waterfall = go.Figure(go.Waterfall(
-        name="Sekolah",
-        orientation="v",
-        measure=["relative", "relative", "relative", "relative", "relative", "total"],
-        x=months,
-        textposition="outside",
-        text=[f"+{v}" if v > 0 else str(v) for v in onboarding_changes[:-1]] + [str(cumulative_schools[-1])],
-        y=onboarding_changes[:-1] + [cumulative_schools[-1]],
-        connector={"line":{"color":"rgb(63, 63, 63)"}},
-        decreasing={"marker":{"color":"#ef4444"}},
-        increasing={"marker":{"color":"#10b981"}},
-        totals={"marker":{"color":"#3b82f6"}}
+    fig_anomali_rasio = go.Figure()
+    for i, row in df_prov_anomali.iterrows():
+        fig_anomali_rasio.add_shape(
+            type="line",
+            x0=0, y0=row['provinsi_label'],
+            x1=row['rasio_anomali'], y1=row['provinsi_label'],
+            line=dict(color="rgba(150,150,150,0.5)", width=2)
+        )
+    fig_anomali_rasio.add_trace(go.Scatter(
+        x=df_prov_anomali['rasio_anomali'],
+        y=df_prov_anomali['provinsi_label'],
+        mode='markers',
+        marker=dict(
+            size=12,
+            color=df_prov_anomali['rasio_anomali'],
+            colorscale='bluered',
+            showscale=True,
+            colorbar=dict(title="Rasio (%)")
+        ),
+        name='Rasio Anomali',
+        hovertemplate='%{y}: %{x:.2f}%<extra></extra>'
     ))
-    fig_waterfall.update_layout(
-        xaxis_title="Bulan",
-        yaxis_title="Perubahan Jumlah Sekolah",
-        margin=dict(t=30, b=30)
+    fig_anomali_rasio.update_layout(
+        title='Rasio Anomali per Provinsi (%)',
+        xaxis_title='Rasio Anomali (%)',
+        yaxis_title='Provinsi',
+        height=600, 
+        margin=dict(t=50, b=30, l=10, r=30)
     )
-    fig_waterfall.update_layout(title='Pertumbuhan Sekolah Katering Aktif')
-    style_plotly(fig_waterfall)
-    st.plotly_chart(fig_waterfall, use_container_width=True)
-    st.caption("💡 **Insight:** Penurunan kapasitas katering (drop-off) di tengah semester adalah *early warning* gagalnya vendor memenuhi SLA sanitasi, mengancam suplai makanan reguler ke ribuan siswa sekaligus.")
-    st.info("📊 **Metadada Visualisasi 1:** Simulasi dinamika pertumbuhan berdasarkan variabel `jumlah_satuan_pendidikan` dari file `MBG_06-19-2026.csv` yang ditarik secara deret waktu (time-series).")
+    style_plotly(fig_anomali_rasio)
+    st.plotly_chart(fig_anomali_rasio, use_container_width=True)
     
     st.divider()
+
+    # Diagram 2: Kepadatan Distribusi Katering per Provinsi
+    st.subheader("2. Kepadatan Distribusi Katering per Provinsi")
+    st.markdown("Perbandingan rata-rata penerima manfaat per sekolah (indikator kepadatan logistik) dan estimasi biaya katering harian per provinsi.")
     
-    st.subheader("2. Komposisi Pertumbuhan Dapur Umum & Katering")
-    st.markdown("Kesiapan logistik berdasarkan skala dapur penyedia makanan MBG sepanjang waktu.")
+    df_katering = df.groupby('provinsi').agg(
+        total_penerima=('jumlah_penerima_manfaat', 'sum'),
+        total_sekolah=('jumlah_satuan_pendidikan', 'sum')
+    ).reset_index()
     
-    # Dummy data for Stacked Area
-    df_dapur = pd.DataFrame({
-        'Bulan': months,
-        'Dapur Skala Kecil (UMKM)': [1200, 1800, 2500, 3100, 3900, 4500],
-        'Dapur Skala Sedang': [500, 800, 1200, 1700, 2200, 2600],
-        'Dapur Skala Besar / Industri': [50, 65, 80, 100, 120, 140]
-    })
+    df_katering['rata_rata_penerima'] = df_katering['total_penerima'] / df_katering['total_sekolah']
+    df_katering['biaya_harian'] = df_katering['total_penerima'] * 15000
+    df_katering = df_katering.sort_values('rata_rata_penerima', ascending=True)
+    df_katering['provinsi_label'] = df_katering['provinsi'].str.replace('Prov. ', '', regex=False)
     
-    fig_area = px.area(
-        df_dapur, 
-        x="Bulan", 
-        y=["Dapur Skala Besar / Industri", "Dapur Skala Sedang", "Dapur Skala Kecil (UMKM)"],
-        color_discrete_sequence=['#8b5cf6', '#f59e0b', '#10b981'],
-        labels={'value': 'Jumlah Dapur/Katering', 'variable': 'Skala Dapur'}
+    from plotly.subplots import make_subplots
+    import plotly.graph_objects as go
+    
+    fig_katering = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    fig_katering.add_trace(
+        go.Bar(
+            x=df_katering['provinsi_label'],
+            y=df_katering['biaya_harian'],
+            name="Estimasi Biaya Harian (Rp)",
+            marker_color='#10b981'
+        ),
+        secondary_y=False,
     )
-    fig_area.update_layout(
-        xaxis_title="Bulan",
-        yaxis_title="Total Ketersediaan Dapur",
-        hovermode="x unified",
-        margin=dict(t=30, b=30)
+    
+    fig_katering.add_trace(
+        go.Scatter(
+            x=df_katering['provinsi_label'],
+            y=df_katering['rata_rata_penerima'],
+            name="Rata-rata Penerima",
+            mode='lines+markers',
+            marker_color='#3b82f6'
+        ),
+        secondary_y=True,
     )
-    fig_area.update_layout(title='Kapasitas Produksi Dapur UMKM vs Menengah')
-    style_plotly(fig_area)
-    st.plotly_chart(fig_area, use_container_width=True)
-    st.caption("💡 **Insight:** Partisipasi UMKM menggerakkan ekonomi lokal secara masif, namun membawa risiko fluktuasi higienitas. Audit mutu acak (random sampling) mutlak diperlukan agar skala tidak mengorbankan standar.")
-    st.info("📊 **Metadada Visualisasi 2:** Simulasi data berdasarkan proyeksi rasio ketercukupan katering terhadap variabel `jumlah_satuan_pendidikan` dan `jumlah_penerima_manfaat` dari file `MBG_06-19-2026.csv`.")
+    
+    fig_katering.update_layout(
+        title='Kepadatan Distribusi & Estimasi Biaya Harian',
+        xaxis_title='Provinsi',
+        height=600,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(t=50, b=30, l=10, r=10)
+    )
+    fig_katering.update_yaxes(title_text="Biaya Harian (Rp)", secondary_y=False)
+    fig_katering.update_yaxes(title_text="Rata-rata Penerima per Sekolah", secondary_y=True)
+    
+    style_plotly(fig_katering)
+    st.plotly_chart(fig_katering, use_container_width=True)
 
 elif menu == "Multivariate":
     st.subheader("Alur Keterkaitan Parameter (Parallel Categories)")

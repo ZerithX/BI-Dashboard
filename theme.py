@@ -201,7 +201,7 @@ def style_plotly(fig):
         paper_bgcolor="#11192B",
         plot_bgcolor="#11192B",
         font=dict(family="IBM Plex Sans, sans-serif", color="#8B95A7", size=12),
-        title=dict(font=dict(family="IBM Plex Sans, sans-serif", size=14, color="#E8EAED")),
+        title_font=dict(family="IBM Plex Sans, sans-serif", size=14, color="#E8EAED"),
         legend=dict(font=dict(size=11, color="#8B95A7")),
         margin=dict(t=40, l=10, r=10, b=10),
     )
